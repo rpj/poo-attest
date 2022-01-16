@@ -1,0 +1,78 @@
+#!/usr/bin/env node
+
+const fs = require('fs');
+const path = require('path');
+const crypto = require('crypto');
+const docopt = require('@eyalsh/docopt').default;
+const mustache = require('mustache');
+
+// disable all escaping as we want plaintext output from mustache
+mustache.escape = (s) => s;
+
+const Defaults = Object.freeze({
+  templateFilePath: path.join(__dirname, 'template.txt'),
+  extraDataBitsize: 4096
+});
+
+const doc = `
+Create Proof-of-Ownership attestation.
+
+Usage:
+  ${path.parse(__filename).base} --name=<n> --email=<e> --desc=<d> --domain=<d> [--template=<file>] [--extraData=<bits>]
+
+Required:
+  --name=<n>          The owner's name.
+  --email=<e>         The owner's email.
+  --desc=<d>          The owned artifact's description.
+  --domain=<d>        The owned artifact's fully-qualified domain name (FQDN).
+
+Optional:
+  --template=<file>   Use 'file' as the Mustache-formatted template document. [default: ${Defaults.templateFilePath}]
+  --extraData=<bits>  Use 'bits' bits as the size of the appended extra data ("key"). [default: ${Defaults.extraDataBitsize}]
+`;
+
+class InternalError extends Error {
+  constructor (wrappedErr) {
+    super(wrappedErr);
+  }
+}
+
+function main (args) {
+  try {
+    console.log(args)
+    console.log(Math.floor(args.extraData / 8))
+    const template = fs.readFileSync(path.resolve(args.template)).toString('utf8');
+    const keyDataB64 = crypto.randomBytes(Math.floor(args.extraData / 8)).toString('base64');
+
+    const { name, email, desc, domain } = args;
+
+    const templateObj = {
+      owner: { name, email },
+      owned: { desc, domain },
+      attest: {
+        date: new Date().toLocaleString(),
+        tz: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        keyDataB64
+      }
+    };
+
+    const attestation = mustache.render(template, templateObj);
+  } catch (err) {
+    if (err.code === 'ENOENT') {
+      throw new Error(`Template file "${args.template}" was not found!`);
+    }
+
+    throw new InternalError(err);
+  }
+}
+
+try {
+  main(Object.entries(docopt(doc)).reduce((a, [k, v]) => ({ [k.replace(/\-/g, '')]: v, ...a}), {}));
+} catch (err) {
+  if (err instanceof InternalError) {
+    console.error(err);
+  }
+  else {
+    console.log(err.message);
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "name": "poo-attest",
+  "version": "1.0.0",
+  "description": "Proof-of-Ownership attestation tool",
+  "main": "attest",
+  "scripts": {
+    "pretest": "semistandard --fix --verbose",
+    "prestart": "semistandard --fix --verbose",
+    "lint": "semistandard --fix --verbose"
+  },
+  "author": "Ryan Joseph <ryan.joseph@gmail.com>",
+  "license": "ISC",
+  "devDependencies": {
+    "semistandard": "^16.0.1"
+  },
+  "dependencies": {
+    "@eyalsh/docopt": "^1.0.7",
+    "mustache": "^4.2.0"
+  }
+}
