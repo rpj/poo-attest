@@ -13,8 +13,9 @@ const Defaults = Object.freeze({
   templateFilePath: path.join(__dirname, 'template'),
   extraDataBitsize: 4096,
   encoding: 'utf8',
-  algo: 'SHA512-256',
-  outputPath: './'
+  algo: 'SHA256',
+  outputPath: './',
+  extraDataWrapAt: 120
 });
 
 const doc = `
@@ -52,23 +53,42 @@ function main (args) {
 
     const { name, email, desc, domain, home } = args;
 
+    const splitter = (s) => {
+      const ret = [];
+
+      for (let i = 0; i < s.length; i += Defaults.extraDataWrapAt) {
+        ret.push(s.slice(i, i + Defaults.extraDataWrapAt));
+      }
+
+      return ret.join('\n');
+    };
+
+    const sha256 = crypto.createHash(args.algo).update(
+      fs.readFileSync(path.resolve(__filename))
+    ).digest('hex');
+
     const templateObj = {
       owner: { name, email },
       owned: { desc, domain },
       attest: {
         home,
-        uniqueDataBase64: uniqueData.toString('base64'),
+        uniqueDataBase64: splitter(uniqueData.toString('base64')),
         date: new Date().toLocaleString(),
         tz: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        package: require('./package.json'),
+        hash: {
+          algo: args.algo,
+          hex: sha256
+        }
       }
     };
 
     const attestation = mustache.render(template, templateObj);
-    const attestHash = crypto.createHmac(args.algo, uniqueData)
+    const attestHash = crypto.createHash(args.algo)
       .update(attestation, args.encoding)
       .digest('hex');
 
-    const outPath = path.resolve(path.join(args.outPath, `${args.algo}_${attestHash}.txt`));
+    const outPath = path.resolve(path.join(args.outPath, `${attestHash}_${args.algo}.txt`));
     fs.writeFileSync(outPath, attestation, { encoding: args.encoding });
 
     console.log(`${args.algo} ${attestHash}`);
