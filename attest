@@ -40,11 +40,7 @@ Optional:
   --outPath=<o>       Use 'o' as the output path for resulting attestation file. [default: ${Defaults.outputPath}]
 `;
 
-class InternalError extends Error {
-  constructor (wrappedErr) {
-    super(wrappedErr);
-  }
-}
+class InternalError extends Error {}
 
 function main (args) {
   try {
@@ -103,7 +99,7 @@ function main (args) {
 }
 
 try {
-  main(Object.entries(docopt(doc)).reduce((a, [k, v]) => ({ [k.replace(/\-/g, '')]: v, ...a }), {}));
+  main(Object.entries(docopt(doc)).reduce((a, [k, v]) => ({ [k.replace(/-/g, '')]: v, ...a }), {}));
 } catch (err) {
   if (err instanceof InternalError) {
     console.error(err);
