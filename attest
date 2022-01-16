@@ -103,12 +103,11 @@ function main (args) {
 }
 
 try {
-  main(Object.entries(docopt(doc)).reduce((a, [k, v]) => ({ [k.replace(/\-/g, '')]: v, ...a}), {}));
+  main(Object.entries(docopt(doc)).reduce((a, [k, v]) => ({ [k.replace(/\-/g, '')]: v, ...a }), {}));
 } catch (err) {
   if (err instanceof InternalError) {
     console.error(err);
-  }
-  else {
+  } else {
     console.log(err.message);
   }
 }

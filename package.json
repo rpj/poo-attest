@@ -4,9 +4,7 @@
   "description": "Proof-of-Ownership attestation tool",
   "main": "attest",
   "scripts": {
-    "pretest": "semistandard --fix --verbose",
-    "prestart": "semistandard --fix --verbose",
-    "lint": "semistandard --fix --verbose"
+    "lint": "semistandard --fix --verbose ./attest"
   },
   "author": "Ryan Joseph <ryan.joseph@gmail.com>",
   "license": "ISC",
