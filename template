@@ -1,0 +1,4 @@
+This document serves to provide proof that {{ owner.name }} <{{ owner.email }}> is the owner of "{{ owned.desc }}" at {{ owned.domain }}.
+This attestation is made {{ attest.date }} ({{ attest.tz }}), and will be housed in perpetuity at/under {{ attest.home }}.
+
+{{ attest.uniqueDataBase64 }}

@@ -10,25 +10,33 @@ const mustache = require('mustache');
 mustache.escape = (s) => s;
 
 const Defaults = Object.freeze({
-  templateFilePath: path.join(__dirname, 'template.txt'),
-  extraDataBitsize: 4096
+  templateFilePath: path.join(__dirname, 'template'),
+  extraDataBitsize: 4096,
+  encoding: 'utf8',
+  algo: 'SHA512-256',
+  outputPath: './'
 });
 
 const doc = `
-Create Proof-of-Ownership attestation.
+Create Proof-of-Ownership attestation. The resulting file's name will contain the attestation's hash.
 
 Usage:
-  ${path.parse(__filename).base} --name=<n> --email=<e> --desc=<d> --domain=<d> [--template=<file>] [--extraData=<bits>]
+  ${path.parse(__filename).base} --name=<n> --email=<e> --home=<h> --desc=<d> --domain=<d>
+    [--template=<file>] [--extraData=<bits>] [--encoding=<enc>] [--algo=<a>] [--outPath=<o>]
 
 Required:
   --name=<n>          The owner's name.
   --email=<e>         The owner's email.
+  --home=<h>          The location at which the resulting attestation will be housed in perpetuity.
   --desc=<d>          The owned artifact's description.
   --domain=<d>        The owned artifact's fully-qualified domain name (FQDN).
 
 Optional:
   --template=<file>   Use 'file' as the Mustache-formatted template document. [default: ${Defaults.templateFilePath}]
   --extraData=<bits>  Use 'bits' bits as the size of the appended extra data ("key"). [default: ${Defaults.extraDataBitsize}]
+  --encoding=<enc>    Use 'enc' as the data encoding. [default: ${Defaults.encoding}]
+  --algo=<a>          Use 'a' as the hashing algorithm. [default: ${Defaults.algo}]
+  --outPath=<o>       Use 'o' as the output path for resulting attestation file. [default: ${Defaults.outputPath}]
 `;
 
 class InternalError extends Error {
@@ -39,24 +47,32 @@ class InternalError extends Error {
 
 function main (args) {
   try {
-    console.log(args)
-    console.log(Math.floor(args.extraData / 8))
-    const template = fs.readFileSync(path.resolve(args.template)).toString('utf8');
-    const keyDataB64 = crypto.randomBytes(Math.floor(args.extraData / 8)).toString('base64');
+    const template = fs.readFileSync(path.resolve(args.template)).toString(args.encoding);
+    const uniqueData = crypto.randomBytes(Math.floor(args.extraData / 8));
 
-    const { name, email, desc, domain } = args;
+    const { name, email, desc, domain, home } = args;
 
     const templateObj = {
       owner: { name, email },
       owned: { desc, domain },
       attest: {
+        home,
+        uniqueDataBase64: uniqueData.toString('base64'),
         date: new Date().toLocaleString(),
         tz: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        keyDataB64
       }
     };
 
     const attestation = mustache.render(template, templateObj);
+    const attestHash = crypto.createHmac(args.algo, uniqueData)
+      .update(attestation, args.encoding)
+      .digest('hex');
+
+    const outPath = path.resolve(path.join(args.outPath, `${args.algo}_${attestHash}.txt`));
+    fs.writeFileSync(outPath, attestation, { encoding: args.encoding });
+
+    console.log(`${args.algo} ${attestHash}`);
+    console.log(`Wrote "${outPath}"`);
   } catch (err) {
     if (err.code === 'ENOENT') {
       throw new Error(`Template file "${args.template}" was not found!`);

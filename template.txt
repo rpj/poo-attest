@@ -1,5 +1,0 @@
-This document serves to provide proof that {{ owner.name }} <{{ owner.email }}> is the owner of {{ owned.desc }} at {{ owned.domain }}. This attestation is made {{ attest.date }} ({{ attest.tz }}).
-
-The following is the unique random data produced for this attestation (in base64):
-
-{{ attest.keyDataB64 }}
