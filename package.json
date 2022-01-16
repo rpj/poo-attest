@@ -1,6 +1,6 @@
 {
   "name": "poo-attest",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Proof-of-Ownership attestation tool",
   "main": "attest",
   "scripts": {
