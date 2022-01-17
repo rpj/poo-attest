@@ -11,11 +11,10 @@ mustache.escape = (s) => s;
 
 const Defaults = Object.freeze({
   templateFilePath: path.join(__dirname, 'template'),
-  extraDataBitsize: 4096,
+  extraDataBitsize: 2048,
   encoding: 'utf8',
   algo: 'SHA256',
-  outputPath: './',
-  extraDataWrapAt: 120
+  outputPath: './'
 });
 
 const doc = `
@@ -45,19 +44,10 @@ class InternalError extends Error {}
 function main (args) {
   try {
     const template = fs.readFileSync(path.resolve(args.template)).toString(args.encoding);
-    const uniqueData = crypto.randomBytes(Math.floor(args.extraData / 8));
+    const lengthBytes = Math.floor(args.extraData / 8);
+    const uniqueData = crypto.randomBytes(lengthBytes);
 
     const { name, email, desc, domain, home } = args;
-
-    const splitter = (s) => {
-      const ret = [];
-
-      for (let i = 0; i < s.length; i += Defaults.extraDataWrapAt) {
-        ret.push(s.slice(i, i + Defaults.extraDataWrapAt));
-      }
-
-      return ret.join('\n');
-    };
 
     const sha256 = crypto.createHash(args.algo).update(
       fs.readFileSync(path.resolve(__filename))
@@ -68,7 +58,11 @@ function main (args) {
       owned: { desc, domain },
       attest: {
         home,
-        uniqueDataBase64: splitter(uniqueData.toString('base64')),
+        uniqueData: {
+          base64: uniqueData.toString('base64'),
+          lengthBytes,
+          hash: crypto.createHash(args.algo).update(uniqueData).digest('hex')
+        },
         date: new Date().toLocaleString(),
         tz: Intl.DateTimeFormat().resolvedOptions().timeZone,
         package: require('./package.json'),
